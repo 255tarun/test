@@ -460,3 +460,319 @@ public partial class EmpPRB : System.Web.UI.Page
     <!-- ==================== Emp-PRB-section end ==================== -->
 </asp:Content>
 
+
+
+
+/*************************************************************/
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.HtmlControls;
+using System.Web.UI.WebControls;
+using System.Data;
+using System.Reflection;
+using System.Text;
+public partial class EmpPRB : System.Web.UI.Page
+{
+    DataClassesDataContext objmain = new DataClassesDataContext();
+    protected override void OnInit(EventArgs e)
+    {
+        base.OnInit(e);
+        ViewStateUserKey = Session.SessionID;
+    }
+
+    string PageName;
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        Response.Cache.SetCacheability(HttpCacheability.NoCache);
+        PageName = "EmpPRB";
+        if (ViewStateUserKey.ToString() != Session.SessionID.ToString())
+        {
+            Session.Abandon();
+            Response.Redirect("LogoutPage.aspx");
+        }
+        if (Session["EmpID"] == null || Session["UserName"] == null || Session["Role"] == null || Session["LoginActiveStatus"] == null)
+        {
+            Session.Abandon();
+            Response.Redirect("LogoutPage.aspx");
+        }
+
+        Page.Header.Title = "HR Connect - PRB Details";
+
+        if (!IsPostBack)
+        {
+            FillEmpPRBDetails();
+            pnlViewTeamPRB.Visible = false;
+            pnlSetTeamPRB.Visible = false;
+            LogInfo.LockLogInfo(Session["EmpID"].ToString(), PageName, "Page Load", "Page Load Successfully", Request.UserHostAddress, DateTime.Now);
+        }
+
+        switch ((int)Session["Role"])
+        {
+            case 1:
+                btnSelfPRB.Visible = true;
+                btnViewTeamPRB.Visible = true;
+                btnSetTeamPRB.Visible = false;
+                break;
+            case 2:
+                btnSelfPRB.Visible = true;
+                btnViewTeamPRB.Visible = true;
+                btnSetTeamPRB.Visible = true;
+                break;
+            case 3:
+            default:
+                btnSelfPRB.Visible = true;
+                btnViewTeamPRB.Visible = false;
+                btnSetTeamPRB.Visible = false;
+                break;
+        }
+    }
+
+    protected void FillEmpPRBDetails()
+    {
+        try
+        {
+            var query = objmain.GetEmployeePRB((int)Session["EmpID"], (int)Session["Role"], DateTime.Now.Year, "Self").ToList();
+            Chart1.Titles.Add("PRB Detail");
+            Chart1.Series["Series1"].XValueMember = "PRBMonth";
+            Chart1.Series["Series1"].YValueMembers = "PRB";
+            Chart1.DataSource = query;
+            Chart1.DataBind();
+            
+            LogInfo.LockLogInfo(Session["EmpID"].ToString(), PageName, "View Employee Profile successfully", "View Employee Profile successfully", Request.UserHostAddress, DateTime.Now);
+        }
+        catch (Exception Ex)
+        {
+            LogInfo.LockLogInfo(Session["EmpID"].ToString(), PageName, "View Employee Profile unsuccessfull", "View Employee Profile unsuccessfull", Request.UserHostAddress, DateTime.Now);
+        }
+    }
+
+    protected void FillTeamPRBDetails()
+    {
+        try
+        {
+            int CurrentYear = DateTime.Now.Year;
+
+            var query = objmain.GetEmployeePRBMonthName((int)Session["EmpID"], (int)Session["Role"], CurrentYear, "Team").ToList();
+
+            GridViewTeamPRB.Columns[1].Visible = false; // Remove Emp ID
+            GridViewTeamPRB.Columns[2].Visible = false; // Remove Team ID
+
+            GridViewTeamPRB.DataSource = query;
+
+            GridViewTeamPRB.DataBind();
+            LogInfo.LockLogInfo(Session["EmpID"].ToString(), PageName, "View Employee Profile successfully", "View Employee Profile successfully", Request.UserHostAddress, DateTime.Now);
+
+        }
+        catch (Exception Ex)
+        {
+            LogInfo.LockLogInfo(Session["EmpID"].ToString(), PageName, "View Employee Profile unsuccessfull", "View Employee Profile unsuccessfull", Request.UserHostAddress, DateTime.Now);
+        }
+    }
+
+    protected void btnSelfPRB_Click(object sender, EventArgs e)
+    {
+        FillEmpPRBDetails();
+        pnlSelfPRB.Visible = true;
+        pnlViewTeamPRB.Visible = false;
+        pnlSetTeamPRB.Visible = false;
+
+        btnSelfPRB.Attributes.Add("class", "button waves-effect default is-checked");
+        btnViewTeamPRB.Attributes.Add("class", "button waves-effect default");
+        btnSetTeamPRB.Attributes.Add("class", "button waves-effect default");
+
+    }
+
+    protected void btnViewTeamPRB_Click(object sender, EventArgs e)
+    {
+        FillTeamPRBDetails();
+        pnlSelfPRB.Visible = false;
+        pnlViewTeamPRB.Visible = true;
+        pnlSetTeamPRB.Visible = false;
+
+        btnSelfPRB.Attributes.Add("class", "button waves-effect default");
+        btnViewTeamPRB.Attributes.Add("class", "button waves-effect default is-checked");
+        btnSetTeamPRB.Attributes.Add("class", "button waves-effect default");
+    }
+
+    protected void btnSetTeamPRB_Click(object sender, EventArgs e)
+    {
+        pnlSelfPRB.Visible = false;
+        pnlViewTeamPRB.Visible = false;
+        pnlSetTeamPRB.Visible = true;
+
+        btnSelfPRB.Attributes.Add("class", "button waves-effect default");
+        btnViewTeamPRB.Attributes.Add("class", "button waves-effect default");
+        btnSetTeamPRB.Attributes.Add("class", "button waves-effect default is-checked");
+    }
+}
+
+
+/********************************************************************************/
+
+<%@ Page Title="" Language="C#" MasterPageFile="~/HRConnectInnerMasterPage.master" AutoEventWireup="true" CodeFile="EmpPRB.aspx.cs" Inherits="EmpPRB" %>
+
+<%@ Register Assembly="System.Web.DataVisualization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" Namespace="System.Web.UI.DataVisualization.Charting" TagPrefix="asp" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- ==================== Emp-PRB-section start ==================== -->
+    <div data-scroll='EmpPRB.aspx' class="my-portfolio-section sec-p100-bg-bs mb-30 clearfix" id="portfolio">
+        <div class="Section-title" style="margin-bottom: -10px;">
+            <h2>
+                <i class="fa fa-pencil" aria-hidden="true"></i>Performance Reviews Bonus
+            </h2>
+            <span>Performance Reviews Bonus</span>
+        </div>
+        <!-- /.Section-title -->
+        <div class="portfolio-area">
+            <div id="filters" class="button-group">
+                <asp:Button ID="btnSelfPRB" runat="server" Text="Self PRB" class="button waves-effect default is-checked" OnClick="btnSelfPRB_Click" />
+                <asp:Button ID="btnViewTeamPRB" runat="server" Text="View Team PRB" class="button waves-effect default" OnClick="btnViewTeamPRB_Click" />
+                <asp:Button ID="btnSetTeamPRB" runat="server" Text="Set Team PRB" class="button waves-effect default" OnClick="btnSetTeamPRB_Click" />
+
+            </div>
+            <div class="grid">
+                <asp:Panel ID="pnlSelfPRB" runat="server">
+                    <asp:Chart ID="Chart1" runat="server" BackColor="Silver"
+                        BackGradientStyle="LeftRight" Height="400px" Palette="None"
+                        PaletteCustomColors="SkyBlue" Width="800px">
+                        <Series>
+                            <asp:Series Name="Series1" ChartType="Bar"></asp:Series>
+                        </Series>
+                        <ChartAreas>
+                            <asp:ChartArea Name="ChartArea1"></asp:ChartArea>
+                        </ChartAreas>
+                        <BorderSkin BackColor="" PageColor="192, 64, 0" />
+                    </asp:Chart>
+                </asp:Panel>
+                <asp:Panel ID="pnlViewTeamPRB" runat="server">
+                    <div class="skill_progress">
+                        <div class="row" id="divStart" runat="server">
+
+                            <asp:GridView ID="GridViewTeamPRB" runat="server" EnableViewState="false"
+                                AutoGenerateColumns="false" RowStyle-Wrap="false">
+                                <Columns>
+                                    <asp:TemplateField HeaderText="Sno">
+                                        <ItemTemplate>
+                                            <%#Container.DataItemIndex+1 %>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:BoundField DataField="EmpID" HeaderText="EmpID" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="TeamID" HeaderText="TeamID" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="TeamName" HeaderText="Team Name" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="EmpName" HeaderText="Emp Name" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="January" HeaderText="Jan" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="February" HeaderText="Feb" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="March" HeaderText="Mar" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="April" HeaderText="Apr" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="May" HeaderText="May" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="June" HeaderText="June" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="July" HeaderText="July" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="August" HeaderText="Aug" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="September" HeaderText="Sept" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="October" HeaderText="Oct" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="November" HeaderText="Nov" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="December" HeaderText="Dec" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                </Columns>
+                                <EmptyDataTemplate>
+                                    <div class="errot">
+                                        <span>No Record Found.</span>
+                                    </div>
+                                </EmptyDataTemplate>
+                            </asp:GridView>
+
+                        </div>
+                    </div>
+                </asp:Panel>
+                <asp:Panel ID="pnlSetTeamPRB" runat="server">
+                    <div class="row">
+                        <div class="contact-left clearfix">
+                            <div class="select-dropdown">
+                                <label>
+                                    Employee</label>
+                                <asp:DropDownList ID="ddlEmpList" runat="server" Style="display: block;">
+                                </asp:DropDownList>
+                            </div>
+                            <div class="select-dropdown">
+                                <label>
+                                    Month</label>
+                                <asp:DropDownList ID="ddlMonth" runat="server" Style="display: block;">
+                                </asp:DropDownList>
+                            </div>
+                            <div class="select-dropdown">
+                                <label>
+                                    Year</label>
+                                <asp:DropDownList ID="ddlYear" runat="server" Style="display: block;">
+                                </asp:DropDownList>
+                            </div>
+                            <div class="row">
+                        <div class="contact-left clearfix">
+                              <asp:GridView ID="GridView1" runat="server" EnableViewState="false"
+                                AutoGenerateColumns="false" RowStyle-Wrap="false">
+                                <Columns>
+                                    <asp:TemplateField HeaderText="Sno">
+                                        <ItemTemplate>
+                                            <%#Container.DataItemIndex+1 %>
+                                        </ItemTemplate>
+                                    </asp:TemplateField>
+                                    <asp:BoundField DataField="EmpID" HeaderText="EmpID" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="TeamID" HeaderText="TeamID" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="TeamName" HeaderText="Team Name" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="EmpName" HeaderText="Emp Name" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="January" HeaderText="Jan" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="February" HeaderText="Feb" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="March" HeaderText="Mar" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="April" HeaderText="Apr" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="May" HeaderText="May" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="June" HeaderText="June" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="July" HeaderText="July" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="August" HeaderText="Aug" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="September" HeaderText="Sept" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="October" HeaderText="Oct" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="November" HeaderText="Nov" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                    <asp:BoundField DataField="December" HeaderText="Dec" ItemStyle-HorizontalAlign="Center" ItemStyle-CssClass="label1" />
+                                </Columns>
+                                <EmptyDataTemplate>
+                                    <div class="errot">
+                                        <span>No Record Found.</span>
+                                    </div>
+                                </EmptyDataTemplate>
+                            </asp:GridView>
+                            </div>
+                                </div>
+
+
+                            <%-- <div class="input-field">
+                                <asp:TextBox ID="txtMarriageAnniversaryDate" runat="server" Enabled="false" Font-Bold="true"></asp:TextBox>
+                                <label>
+                                    Date Of Marriage Anniversary</label>
+                            </div>
+                            <div class="input-field">
+                                <asp:TextBox ID="txtDOJ" runat="server" Enabled="false" Font-Bold="true"></asp:TextBox>
+                                <label>
+                                    Date Of Joining</label>
+                            </div>--%>
+                        </div>
+                        <!-- /.contact-right -->
+
+
+                    </div>
+
+                </asp:Panel>
+            </div>
+            <!-- /.grid -->
+        </div>
+        <!-- /.PRB-area -->
+    </div>
+    <!-- /.Emp-PRB-section -->
+    <!-- ==================== Emp-PRB-section end ==================== -->
+
+
+</asp:Content>
+
+
