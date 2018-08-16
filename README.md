@@ -1,18 +1,116 @@
 # testtest
 
 
+  <asp:Panel ID="pnlSetTeamPRB" runat="server">
+                    <div class="row">
+                        <div class="contact-left clearfix">
+                            <div class="select-dropdown">
+                                <span class="focus-input100"></span>
+                                <span class="symbol-input100">
+                                    <i class="fa fa-user" aria-hidden="true">&nbsp;Employee</i>
+                                </span>
+                                <asp:DropDownList ID="ddlEmpList" runat="server" Style="display: block;" class="require">
+                                </asp:DropDownList>
+                            </div>
+                            <div class="select-dropdown">
+                                <span class="focus-input100"></span>
+                                <span class="symbol-input100">
+                                    <i class="fa fa-calendar" aria-hidden="true">&nbsp;Month</i>
+                                </span>
+                                <asp:DropDownList ID="ddlMonth" runat="server" Style="display: block;" class="require">
+                                </asp:DropDownList>
+                            </div>
+                            <div class="select-dropdown">
+                                <span class="focus-input100"></span>
+                                <span class="symbol-input100">
+                                    <i class="fa fa-calendar" aria-hidden="true">&nbsp;Year</i>
+                                </span>
+                                <asp:DropDownList ID="ddlYear" runat="server" Style="display: block;">
+                                </asp:DropDownList>
+                            </div>
+
+                            <label>&nbsp;</label>
+                            <label>1 - Poor&nbsp;&nbsp;&nbsp;2 – Fair&nbsp;&nbsp;&nbsp;3 – Average&nbsp;&nbsp;&nbsp;4 – Good&nbsp;&nbsp;&nbsp;5 – Excellent</label>
+                            <div class="EU_TableScroll">
+                                <asp:GridView ID="gridViewCriteria" runat="server" AutoGenerateColumns="false" CssClass="EU_DataTable">
+                                    <Columns>
+                                        <asp:TemplateField HeaderText="Sno">
+                                            <ItemTemplate>
+                                                <%#Container.DataItemIndex+1 %>
+                                            </ItemTemplate>
+                                        </asp:TemplateField>
+                                        <asp:BoundField DataField="CriteriaName" HeaderText="Criteria" />
+                                        <asp:TemplateField HeaderText="Rating">
+                                            <ItemTemplate>
+                                                <asp:HiddenField ID="hdnCriteriaID" runat="server" Value='<%# Eval("CriteriaID") %>' />
+                                                <asp:RadioButtonList ID="rdoRating" runat="server" RepeatDirection="Horizontal">
+                                                    <asp:ListItem Value="5" Text="Excellent"></asp:ListItem>
+                                                    <asp:ListItem Value="4" Text="Good"></asp:ListItem>
+                                                    <asp:ListItem Value="3" Text="Average"></asp:ListItem>
+                                                    <asp:ListItem Value="2" Text="Fair"></asp:ListItem>
+                                                    <asp:ListItem Value="1" Text="Poor"></asp:ListItem>
+                                                </asp:RadioButtonList>
+                                                <asp:RequiredFieldValidator ID="RequiredFieldValidator1" runat="server" InitialValue="-1"
+                                                    ControlToValidate="rdoRating" ForeColor="Red" ErrorMessage=" Rating field is required"></asp:RequiredFieldValidator>
+                                            </ItemTemplate>
+                                        </asp:TemplateField>
+                                        <asp:TemplateField HeaderText="Feedback">
+                                            <ItemTemplate>
+                                                <asp:TextBox ID="txtFeedback" runat="server"></asp:TextBox>
+                                            </ItemTemplate>
+                                        </asp:TemplateField>
+
+                                    </Columns>
+                                    <EmptyDataTemplate>
+                                        <div class="errot">
+                                            <span>No Record Found.</span>
+                                        </div>
+                                    </EmptyDataTemplate>
+                                </asp:GridView>                              
+                            </div>
+
+                            <div class="input-field">
+                                <asp:TextBox ID="txtOverAllPRB" runat="server" class="require" MaxLength="2"></asp:TextBox>
+                                <asp:RequiredFieldValidator ID="RequiredFieldValidator1" runat="server"
+                                    ControlToValidate="txtOverAllPRB" ErrorMessage="Over All PRB can not be blank."></asp:RequiredFieldValidator>
+                                <asp:RangeValidator ID="RangeValidator1" runat="server" ControlToValidate="txtOverAllPRB"
+                                    ErrorMessage="Invalid Over All PRB. Please enter the PRB between 10 to 20."
+                                    MaximumValue="20" MinimumValue="10" Type="Integer"></asp:RangeValidator>
+                                <label>
+                                    Over All PRB</label>
+                            </div>
+                            <div class="input-field">
+                                <asp:TextBox ID="txtComment" runat="server" TextMode="MultiLine" class="materialize-textarea"></asp:TextBox>
+                                <label>
+                                    Comment</label>
+                                  <asp:ValidationSummary ID="ValidationSummary1" ForeColor="Red" runat="server" />
+                                <div class="response">
+                                </div>
+                            </div>
+
+                            <%--<button type="button" class="submitForm custom-btn waves-effect">
+                                <i class="fa fa-floppy-o" aria-hidden="true"></i>Save</button>--%>
+
+                            <asp:ImageButton ID="btnSave" runat="server" Text="Save" ImageUrl="~/images/savebutton.png" OnClick="btnSave_Click" />
+                        </div>
+
+                        <!-- /.contact-right -->
+                    </div>
+                </asp:Panel>
+
+
+/******************************************************/
+
+
+
 using System;
-using System.Collections.Generic;
+using System.Data;
+using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.UI;
-using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
-using System.Data;
-using System.Reflection;
-using System.Text;
-using System.Globalization;
-using System.Activities.Statements;
 
 public partial class EmpPRB : System.Web.UI.Page
 {
@@ -238,6 +336,8 @@ public partial class EmpPRB : System.Web.UI.Page
 
     private bool Validate()
     {
+        string regularExpressionForOverAllPRB = @"^[0-9]{2}$";
+
         if (ddlEmpList.SelectedIndex == -1)
         {
             ScriptManager.RegisterStartupScript(Page, this.GetType(), "d", "alert('Select Employee ID.');", true);
@@ -254,7 +354,19 @@ public partial class EmpPRB : System.Web.UI.Page
         {
             ScriptManager.RegisterStartupScript(Page, this.GetType(), "d", "alert('Over all PRB can not be blank.');", true);
             return false;
+        }        
+        
+        if (txtOverAllPRB.Text.Trim().Length > 2)
+        {
+            ScriptManager.RegisterStartupScript(Page, this.GetType(), "d", "alert('Please Enter Valid Over all PRB.');", true);
+            return false;
         }
+        if (!Regex.IsMatch(txtOverAllPRB.Text.Trim(), regularExpressionForOverAllPRB))
+        {
+            ScriptManager.RegisterStartupScript(Page, this.GetType(), "d", "alert('Please Enter Valid Over all PRB');", true);
+            return false;
+        }
+
         return true;
     }
 
@@ -267,142 +379,56 @@ public partial class EmpPRB : System.Web.UI.Page
                 data.Connection.Open();
                 using (data.Transaction = data.Connection.BeginTransaction())
                 {
-                    PRBDetail savePRB = new PRBDetail()
+                    if (!data.PRBDetails.Any(u => u.PRBYear == Convert.ToInt32(ddlYear.SelectedItem.Value)
+                            && u.PRBMonth == Convert.ToInt32(ddlMonth.SelectedItem.Value)
+                            && u.EmpID == Convert.ToInt32(ddlEmpList.SelectedItem.Value)))
+
                     {
-                        EmpID = Convert.ToInt32(ddlEmpList.SelectedItem.Value),
-                        PRB = Convert.ToInt32(txtOverAllPRB.Text.Trim()),
-                        PRBMonth = Convert.ToByte(ddlMonth.SelectedItem.Value),
-                        PRBYear = Convert.ToInt32(ddlYear.SelectedItem.Value),
-                        EnterDate = DateTime.Now,
-                        GivenBY = Convert.ToInt32(Session["EmpID"].ToString()),
-                        FeedBack = txtComment.Text.Trim(),
-                        CreatedBY = Session["EmpID"].ToString(),
-                        CreateDate = DateTime.Now,
-                        CreateIPAddress = Request.UserHostAddress
-                    };
-
-                    data.PRBDetails.InsertOnSubmit(savePRB);
-                    data.SubmitChanges();
-
-                    int PRBId = data.PRBDetails.Select(C => C.ID).Max();
-                    foreach (GridViewRow row in gridViewCriteria.Rows)
-                    {
-                        HiddenField hdnCriteriaID = (HiddenField)row.FindControl("hdnCriteriaID");
-                        RadioButtonList rdoRating = (RadioButtonList)row.FindControl("rdoRating");
-                        TextBox txtFeedback = (TextBox)row.FindControl("txtFeedback");
-
-                        PRBCriteriaDetail savePRBCriteriaDetail = new PRBCriteriaDetail()
+                        PRBDetail savePRB = new PRBDetail()
                         {
-                            PRBID = savePRB.ID,
-                            CriteriaID = Convert.ToInt32(hdnCriteriaID.Value),
-                            Rating = Convert.ToByte(rdoRating.SelectedItem.Value),
-                            FeedBack = txtFeedback.Text.Trim(),
+                            EmpID = Convert.ToInt32(ddlEmpList.SelectedItem.Value),
+                            PRB = Convert.ToInt32(txtOverAllPRB.Text.Trim()),
+                            PRBMonth = Convert.ToByte(ddlMonth.SelectedItem.Value),
+                            PRBYear = Convert.ToInt32(ddlYear.SelectedItem.Value),
+                            EnterDate = DateTime.Now,
+                            GivenBY = Convert.ToInt32(Session["EmpID"].ToString()),
+                            FeedBack = txtComment.Text.Trim(),
                             CreatedBY = Session["EmpID"].ToString(),
                             CreateDate = DateTime.Now,
                             CreateIPAddress = Request.UserHostAddress
                         };
-                        data.PRBCriteriaDetails.InsertOnSubmit(savePRBCriteriaDetail);
+
+                        data.PRBDetails.InsertOnSubmit(savePRB);
+                        data.SubmitChanges();
+
+                        int PRBId = data.PRBDetails.Select(C => C.ID).Max();
+                        foreach (GridViewRow row in gridViewCriteria.Rows)
+                        {
+                            HiddenField hdnCriteriaID = (HiddenField)row.FindControl("hdnCriteriaID");
+                            RadioButtonList rdoRating = (RadioButtonList)row.FindControl("rdoRating");
+                            TextBox txtFeedback = (TextBox)row.FindControl("txtFeedback");
+
+                            PRBCriteriaDetail savePRBCriteriaDetail = new PRBCriteriaDetail()
+                            {
+                                PRBID = savePRB.ID,
+                                CriteriaID = Convert.ToInt32(hdnCriteriaID.Value),
+                                Rating = Convert.ToByte(rdoRating.SelectedItem.Value),
+                                FeedBack = txtFeedback.Text.Trim(),
+                                CreatedBY = Session["EmpID"].ToString(),
+                                CreateDate = DateTime.Now,
+                                CreateIPAddress = Request.UserHostAddress
+                            };
+                            data.PRBCriteriaDetails.InsertOnSubmit(savePRBCriteriaDetail);
+                        }
+                        data.SubmitChanges();
+                        data.Transaction.Commit();
                     }
-                    data.SubmitChanges();
-                    data.Transaction.Commit();
+                    else
+                    {
+                        ScriptManager.RegisterStartupScript(Page, this.GetType(), "d", "alert('PRB for selected employee for month and year already given.');", true);
+                    }
                 }
             }
         }
     }
 }
-
-
-
-/******************************************/
-
-<asp:Panel ID="pnlSetTeamPRB" runat="server">
-                    <div class="row">
-                        <div class="contact-left clearfix">
-                            <div class="select-dropdown">
-                                <span class="focus-input100"></span>
-                                <span class="symbol-input100">
-                                    <i class="fa fa-user" aria-hidden="true">&nbsp;Employee</i>
-                                </span>
-                                <asp:DropDownList ID="ddlEmpList" runat="server" Style="display: block;" class="require">
-                                </asp:DropDownList>
-                            </div>
-                            <div class="select-dropdown">
-                                <span class="focus-input100"></span>
-                                <span class="symbol-input100">
-                                    <i class="fa fa-calendar" aria-hidden="true">&nbsp;Month</i>
-                                </span>
-                                <asp:DropDownList ID="ddlMonth" runat="server" Style="display: block;" class="require">
-                                </asp:DropDownList>
-                            </div>
-                            <div class="select-dropdown">
-                                <span class="focus-input100"></span>
-                                <span class="symbol-input100">
-                                    <i class="fa fa-calendar" aria-hidden="true">&nbsp;Year</i>
-                                </span>
-                                <asp:DropDownList ID="ddlYear" runat="server" Style="display: block;">
-                                </asp:DropDownList>
-                            </div>
-
-                            <label>&nbsp;</label>
-                            <label>1 - Poor&nbsp;&nbsp;&nbsp;2 – Fair&nbsp;&nbsp;&nbsp;3 – Average&nbsp;&nbsp;&nbsp;4 – Good&nbsp;&nbsp;&nbsp;5 – Excellent</label>
-                            <div class="EU_TableScroll">
-                                <asp:GridView ID="gridViewCriteria" runat="server" AutoGenerateColumns="false" CssClass="EU_DataTable">
-                                    <Columns>
-                                        <asp:TemplateField HeaderText="Sno">
-                                            <ItemTemplate>
-                                                <%#Container.DataItemIndex+1 %>
-                                            </ItemTemplate>
-                                        </asp:TemplateField>
-                                        <asp:BoundField DataField="CriteriaName" HeaderText="Criteria" />
-                                        <asp:TemplateField HeaderText="Rating">
-                                            <ItemTemplate>
-                                                     <asp:HiddenField ID="hdnCriteriaID" runat="server" Value='<%# Eval("CriteriaID") %>' />
-                                                <asp:RadioButtonList ID="rdoRating" runat="server" RepeatDirection="Horizontal">
-                                                    <asp:ListItem Value="5" Text="Excellent"></asp:ListItem>
-                                                    <asp:ListItem Value="4" Text="Good"></asp:ListItem>
-                                                    <asp:ListItem Value="3" Text="Average"></asp:ListItem>
-                                                    <asp:ListItem Value="2" Text="Fair"></asp:ListItem>
-                                                    <asp:ListItem Value="1" Text="Poor"></asp:ListItem>
-                                                </asp:RadioButtonList>
-                                                <asp:RequiredFieldValidator ID="RequiredFieldValidator1" runat="server" InitialValue="-1"
-                                                    ControlToValidate="rdoRating" ForeColor="Red" ErrorMessage=" Rating field is required"></asp:RequiredFieldValidator>
-                                            </ItemTemplate>
-                                        </asp:TemplateField>
-                                        <asp:TemplateField HeaderText="Feedback">
-                                            <ItemTemplate>
-                                                <asp:TextBox ID="txtFeedback" runat="server"></asp:TextBox>
-                                            </ItemTemplate>
-                                        </asp:TemplateField>
-
-                                    </Columns>
-                                    <EmptyDataTemplate>
-                                        <div class="errot">
-                                            <span>No Record Found.</span>
-                                        </div>
-                                    </EmptyDataTemplate>
-                                </asp:GridView>
-                                <asp:ValidationSummary ID="ValidationSummary1" ForeColor="Red" runat="server" />
-                            </div>
-
-                            <div class="input-field">
-                                <asp:TextBox ID="txtOverAllPRB" runat="server" class="require"></asp:TextBox>
-                                <label>
-                                    Over All PRB</label>
-                            </div>
-                            <div class="input-field">
-                                <asp:TextBox ID="txtComment" runat="server" TextMode="MultiLine" class="materialize-textarea"></asp:TextBox>
-                                <label>
-                                    Comment</label>
-                                <div class="response">
-                                </div>
-                            </div>
-
-                            <%--<button type="button" class="submitForm custom-btn waves-effect">
-                                <i class="fa fa-floppy-o" aria-hidden="true"></i>Save</button>--%>
-
-                            <asp:ImageButton ID="btnSave" runat="server" Text="Save" ImageUrl="~/images/savebutton.png" OnClick="btnSave_Click" />
-                        </div>
-
-                        <!-- /.contact-right -->
-                    </div>
-                </asp:Panel>
